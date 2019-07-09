@@ -25,7 +25,7 @@ stograd <- function(param, data, fn, gr=NULL, control = list()) {
 
 	if (is.null(control$bsize)) {
 		if (is.null(control$nbatches)) {
-			nbatches <- 10;	
+			nbatches <- min(N, 10);
 		}
 		bsize <- floor(N / nbatches);
 	} else {
