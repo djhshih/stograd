@@ -209,10 +209,10 @@ namespace stograd {
 		g.reserve(D);
 		for (size_t d = 0; d < D; ++d) {
 			vector<Real> xp(x);
-			x[d] += step;
+			xp[d] += step;
 
 			vector<Real> xm(x);
-			x[d] -= step;
+			xm[d] -= step;
 
 			g.push_back( (fn(xp) - fn(xm)) / (2 * step) );
 		}

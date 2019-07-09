@@ -8,33 +8,35 @@ namespace lm {
 
 	struct model {
 		/// Rows of predictor variable values
-		vector<vector<double>> X;
+		vector<vector<double>>& _X;
 
 		/// Observed response variable values
-		vector<double> y;
+		vector<double>& _y;
 
 		/// Index of the current observation
 		size_t i;
 
-		model() : i(0) {}
+		model(vector<vector<double>>& X, vector<double>& y)
+			: _X(X), _y(y), i(0)
+		{}
 		
 		/// Return squared error
 		/// (y - X \beta)^\top (y - X \beta)
 		/// This is not required if exact analytic gradient is available
-		double objective(const vector<double>& beta) {
-			double e = y[i] - dot_product(X[i], beta);
+		double objective(const vector<double>& beta) const {
+			double e = _y[i] - dot_product(_X[i], beta);
 			return e * e;
 		}
 
 		/// Return gradient w.r.t. beta in vector g
 		/// g is a out parameter that must be passed in uninitialized
 		/// ( -2 (y - X \beta)^\top X )^\top
-		void gradient(const vector<double>& beta, vector<double>& g) {
-			vector<double>& xi = X[i];
+		virtual void gradient(const vector<double>& beta, vector<double>& g) const {
+			vector<double>& xi = _X[i];
 			size_t D = xi.size();
 			g.reserve(D);
 
-			double e = (y[i] - dot_product(xi, beta));
+			double e = (_y[i] - dot_product(xi, beta));
 			for (size_t d = 0; d < D; ++d) {
 				g.push_back(-2.0 * e * xi[d]);
 			}
@@ -43,12 +45,12 @@ namespace lm {
 		/// Move onto next observation
 		void next() {
 			++i;
-			if (i == y.size()) {
+			if (i == _y.size()) {
 				i = 0;
 			}
 		}
 
-		double operator()(const vector<double>& beta) {
+		double operator()(const vector<double>& beta) const {
 			return objective(beta);
 		}
 	};
@@ -58,11 +60,11 @@ namespace lm {
 		size_t _N;
 		size_t _D;
 
-		model m;
+		model& _m;
 		vector<double> beta;
 
-		optimizable(size_t N, size_t D)
-			: _N(N), _D(D), beta(D, 0.0)
+		optimizable(size_t N, size_t D, model& m)
+			: _N(N), _D(D), _m(m), beta(D, 0.0)
 		{}
 		
 		size_t nobs() const {
@@ -77,11 +79,11 @@ namespace lm {
 		/// accmuluate the current gradient
 		void accumulate(vector<double>& grad) {
 			vector<double> gradi;
-			m.gradient(beta, gradi);
+			_m.gradient(beta, gradi);
 
 			add_to(gradi, grad);
 			
-			m.next();
+			_m.next();
 		}
 
 		/// Update beta based on provided delta vector
@@ -91,7 +93,22 @@ namespace lm {
 
 	};
 
-}
+	namespace finite_difference {
+
+		// Alternative model using finite difference approximation for the gradient
+		struct model : lm::model {
+			model(vector<vector<double>>& X, vector<double>& y)
+				: lm::model(X, y)
+			{}
+
+			void gradient(const vector<double>& beta, vector<double>& g) const {
+				finite_difference_gradient(*this, beta, g);
+			}
+		};
+
+	}  // namespace finite_difference
+
+}  // namespace lm
 
 int main(int argc, char* argv[]) {
 
@@ -105,49 +122,61 @@ int main(int argc, char* argv[]) {
 
 	cout << "beta: [" << beta[0] << ", " << beta[1] << "]" << endl;
 
-	// set up model
-	lm::optimizable opt(N, D);
-	lm::model& m = opt.m;
 
 	cout << "Populate example data ..." << endl;
 
-	m.X.resize(N);
+	vector<vector<double>> X(N);
+	vector<double> y(N);
 
-	m.X[0].resize(D);
-	m.X[0][0] = -2.0;
-	m.X[0][1] = -1.0;
+	X[0].resize(D);
+	X[0][0] = -2.0;
+	X[0][1] = -1.0;
 
-	m.X[1].resize(D);
-	m.X[1][0] =  2.0;
-	m.X[1][1] =  0.0;
+	X[1].resize(D);
+	X[1][0] =  2.0;
+	X[1][1] =  0.0;
 
-	m.X[2].resize(D);
-	m.X[2][0] =  1.0;
-	m.X[2][1] =  3.0;
+	X[2].resize(D);
+	X[2][0] =  1.0;
+	X[2][1] =  3.0;
 
-	m.X[3].resize(D);
-	m.X[3][0] =  0.0;
-	m.X[3][1] = -1.0;
+	X[3].resize(D);
+	X[3][0] =  0.0;
+	X[3][1] = -1.0;
 	
-	m.X[4].resize(D);
-	m.X[4][0] =  1.0;
-	m.X[4][1] =  2.0;
+	X[4].resize(D);
+	X[4][0] =  1.0;
+	X[4][1] =  2.0;
 
 	// y = X \beta
-	m.y.resize(N);
 	for (size_t i = 0; i < N; ++i) {
-		m.y[i] = dot_product(m.X[i], beta);
+		y[i] = dot_product(X[i], beta);
 	}
 
-	cout << "Running stochastic gradient descent ..." << endl;
+	{
+		cout << "Running stochastic gradient descent ..." << endl;
 
-	// Estimate beta by using stochastic gradient descent
-	// to minimize the squared error objective function
-	
-	double epochs = stograd::optimize(opt, 2, 1000, 1e-2, 1e-4);
+		// Estimate beta by using stochastic gradient descent
+		// to minimize the squared error objective function
+		
+		lm::model m(X, y);
+		lm::optimizable opt(N, D, m);
+		double epochs = stograd::optimize(opt, 2, 1000, 1e-2, 1e-3);
 
-	cout << "elasped epochs: " << epochs << endl;
-	cout << "beta_hat: [" << opt.beta[0] << ", " << opt.beta[1] << "]" << endl;
+		cout << "elasped epochs: " << epochs << endl;
+		cout << "beta_hat: [" << opt.beta[0] << ", " << opt.beta[1] << "]" << endl;
+	}
+
+	{
+		cout << "Repeating with finite difference approximation ..." << endl;
+
+		lm::finite_difference::model m(X, y);
+		lm::optimizable opt(N, D, m);
+		double epochs = stograd::optimize(opt, 2, 1000, 1e-2, 1e-3);
+
+		cout << "elasped epochs: " << epochs << endl;
+		cout << "beta_hat: [" << opt.beta[0] << ", " << opt.beta[1] << "]" << endl;
+	}
 
 	return 0;
 }
