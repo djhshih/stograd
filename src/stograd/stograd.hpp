@@ -108,8 +108,8 @@ namespace stograd {
 	 * @return  number of passes through the data (including fractions),
 	 *          negated if gradient did not converge to zero early
 	 */
-	template <typename Optimizable>
-	double optimize(Optimizable& op, size_t bsize, size_t nepochs, double rate=1e-2, double eps=1.0e-4) {
+	template <typename Optimizable, typename Real>
+	double optimize(Optimizable& op, size_t bsize, size_t nepochs, Real rate=1e-2, Real eps=1.0e-4) {
 		size_t nobs = op.nobs();
 		size_t nparams = op.nparams();
 
@@ -120,7 +120,7 @@ namespace stograd {
 		size_t nremnant = nobs - (nbatches * bsize);
 
 		// TODO adapt the learning rate
-		double _rate = rate;
+		Real _rate = rate;
 
 		// number of data points processed in the current epoch
 		size_t nprocessed;
@@ -133,7 +133,7 @@ namespace stograd {
 			nprocessed = 0;
 
 			// overall gradient across all batches
-			vector<double> ograd(nparams, 0.0);
+			vector<Real> ograd(nparams, 0.0);
 
 			for (size_t b = 0; b < nbatches; ++b) {
 
@@ -145,7 +145,7 @@ namespace stograd {
 					_bsize = bsize;
 				}
 
-				vector<double> grad(nparams, 0.0);
+				vector<Real> grad(nparams, 0.0);
 
 				// iterate through data points in a batch to accumulate the gradient
 				for (size_t i = 0; i < _bsize; ++i) {
@@ -154,8 +154,8 @@ namespace stograd {
 				}
 
 				// compute the delta vector, re-using grad
-				vector<double>::iterator it;
-				vector<double>::const_iterator end = grad.end();
+				typename vector<Real>::iterator it;
+				typename vector<Real>::const_iterator end = grad.end();
 				for (it = grad.begin(); it != end; ++it) {
 					(*it) *= _rate / _bsize;
 				}
