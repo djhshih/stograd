@@ -93,8 +93,8 @@ batch_limits <- function(b, bsize, nbatches) {
 # Central finite difference approximation the gradient.
 # Requires 2 * d evaluations of the function
 # where d is the number of parameter dimensions.
-# delta << 1e-12 appears to reduce accuracy.
-finite_difference_gr <- function(fn, data, delta=1e-12) {
+# step << 1e-6 appears to reduce accuracy.
+finite_difference_gr <- function(fn, data, step=1e-6) {
 	function(param, data) {
 		d <- length(param);
 		# perturb each of d dimensions of the parameter
@@ -102,10 +102,10 @@ finite_difference_gr <- function(fn, data, delta=1e-12) {
 			function(k) {
 				# perturb only the kth dimension
 				v <- rep(0, d);
-				v[k] <- delta;
+				v[k] <- step;
 
 				# evaluate central difference
-				(fn(param + v, data) - fn(param - v, data)) / (2*delta)
+				(fn(param + v, data) - fn(param - v, data)) / (2*step)
 			}
 		))
 	}
