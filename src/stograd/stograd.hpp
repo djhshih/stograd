@@ -8,6 +8,43 @@ namespace stograd {
 
 	using namespace std;
 
+#ifdef DEBUG
+
+		class Optimizable {
+			public:
+
+				/// Number of observations.
+				virtual std::size_t nobs() const = 0;
+
+				/// Number of parameters.
+				virtual std::size_t nparams() const = 0;
+
+				/// Accumulate gradient.
+				///
+				/// Compute the gradient of the objective function of the next data point
+				/// and add it to the provided current gradient vector
+				///
+				/// @param grad  current gradient vector (of size `nparams`)
+				virtual void accumulate(std::vector<double>& grad) = 0;
+
+				/// Update parameter vector.
+				///
+				/// To minimize the objective function, use the `substract` utility
+				/// function to update the internal parameter vectorc with the provided
+				/// delta vector. Otherwise, use the `add` function.
+				///
+				/// @param delta  vector for updating the parameter vector
+				virtual void update(const std::vector<double>& delta) = 0;
+
+			protected:
+
+				// Disallow polymorphic deletion through a base pointer
+				virtual ~Optimizable() {}
+		};
+
+#endif  // DEBUG
+
+
 	/**
 	 * Substract vector ys from vector xs.
 	 *
@@ -58,37 +95,10 @@ namespace stograd {
 	 * Minimize (maximize) an objective function by stochastic gradient descent
 	 * (ascent) to a possibly local (but hopefully global) optimum.
 	 *
-	 * We use template instead of a virtual class for superior runtime speed.
-	 *
-	 * Specification of implicit Optimizable interface:
-	 
-		class Optimizable {
-			public:
-
-				/// Number of observations.
-				std::size_t nobs() const;
-
-				/// Number of parameters.
-				std::size_t nparams() const;
-
-				/// Accumulate gradient.
-				///
-				/// Compute the gradient of the objective function of the next data point
-				/// and add it to the provided current gradient vector
-				///
-				/// @param grad  current gradient vector (of size `nparams`)
-				void accumulate(std::vector<double>& grad);
-
-				/// Update parameter vector.
-				///
-				/// To minimize the objective function, use the `substract` utility
-				/// function to update the internal parameter vectorc with the provided
-				/// delta vector. Otherwise, use the `add` function.
-				///
-				/// @param delta  vector for updating the parameter vector
-				void update(const std::vector<double>& delta);
-		};
-
+	 * The Optimizable type is implicitly required to implement the Optimizable
+	 * interface class given above. For production code, we use template instead 
+	 * of an abstract class for superior runtime speed.
+	 * 
 	 * @param op      an object of a class that implements the implicit 
 	 *                Optimizable interface
 	 * @param bsize   batch size
