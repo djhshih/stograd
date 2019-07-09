@@ -4,27 +4,27 @@
 source("../R/stograd.R");
 
 # Gradient for linear models
-# @param  param  parameter values
-# @param  data   a list of y and X
-gradient_lm <- function(param, data) {
+# @beta  beta   model parameter values (i.e. coefficients)
+# @beta  data   a list of y and X
+gradient_lm <- function(beta, data) {
 	d <- unsplit_data(data);
 	y <- d[[1]];
 	X <- d[[2]];
 
-	t( -2 * t(y - X %*% param) %*% X )
+	t( -2 * t(y - X %*% beta) %*% X )
 }
 
 # Squared error for linear models
-objective_lm <- function(param, data) {
+objective_lm <- function(beta, data) {
 	d <- unsplit_data(data);
 	y <- d[[1]];
 	X <- d[[2]];
 
-	e <- y - X %*% param;
+	e <- y - X %*% beta;
 	sum(e * e)
 }
 
-# Estimate linear model parameters based on normal equation:
+# Estimate linear model betaeters based on normal equation:
 # \hat{\theta} = (X^\top X)^{-1} X^\top y
 estimate_by_normal_eq <- function(y, X) {
 	solve(t(X) %*% X, t(X) %*% y)
@@ -59,6 +59,25 @@ unsplit_data <- function(data) {
 	list(y, X)
 }
 
+
+# Example 1 ------------------------------------------------------------------
+
+N <- 5;
+d <- 2;
+X <- matrix(c(-2, -1, 2, 0, 1, 3, 0, -1, 1, 2), nrow=N, ncol=d, byrow=TRUE);
+beta <- matrix(c(0.5, -1.5), ncol=1);
+y <- X %*% beta;
+
+data <- split_data(y, X);
+
+beta0 <- matrix(rep(0, d), ncol=1);
+beta.hat.sgd <- stograd(beta0, data, fn=NULL, gr=gradient_lm);
+beta.hat.sgd2 <- stograd(beta0, data, fn=objective_lm);
+
+beta.hat <- estimate_by_normal_eq(y, X);
+
+
+# Example 2 ------------------------------------------------------------------
 
 N <- 1010;
 d <- 5;
