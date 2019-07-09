@@ -179,6 +179,30 @@ namespace stograd {
 		return converged ? epochs : -epochs;
 	}
 
+	/**
+	 * Approximate gradient by central finite difference.
+	 *
+	 *
+	 * @param fn  functor object that accepts vector<Real>& and returns Real;
+	 *            evaluation fn(x) must have no side-effect
+	 * @param x   point at which to evaluate the gradient
+	 * @param g   uninitialized out parameter that will hold the evaluated value
+	 * @param step  step size
+	 */
+	template <typename F, typename Real>
+	void finite_difference_gradient(const F& fn, const vector<Real>& x, vector<Real>& g, Real step=1e-6) {
+		size_t D = x.size();
+		g.reserve(D);
+		for (size_t d = 0; d < D; ++d) {
+			vector<Real> xp(x);
+			x[d] += step;
+
+			vector<Real> xm(x);
+			x[d] -= step;
+
+			g.push_back( (fn(xp) - fn(xm)) / (2 * step) );
+		}
+	}
 
 }
 
