@@ -29,9 +29,9 @@ namespace stograd {
 
 				/// Update parameter vector.
 				///
-				/// To minimize the objective function, use the `substract` utility
+				/// To minimize the objective function, use the `substract_from` utility
 				/// function to update the internal parameter vectorc with the provided
-				/// delta vector. Otherwise, use the `add` function.
+				/// delta vector. Otherwise, use the `add_to` function.
 				///
 				/// @param delta  vector for updating the parameter vector
 				virtual void update(const std::vector<double>& delta) = 0;
@@ -46,42 +46,56 @@ namespace stograd {
 
 
 	/**
-	 * Substract vector ys from vector xs.
+	 * Substract vector xs from vector ys.
 	 *
 	 * Vectors must have the same size.
 	 */
 	template <typename T>
-	void subtract(vector<T>& xs, const vector<T>& ys) {
-		typename vector<T>::iterator xit;
-		typename vector<T>::const_iterator yit, xend = xs.end();
-		for (xit = xs.begin(), yit = ys.begin(); xit != xend; ++xit, ++yit) {
-			(*xit) -= (*yit);
+	void subtract_from(const vector<T>& xs, vector<T>& ys) {
+		typename vector<T>::const_iterator xit;
+		typename vector<T>::iterator yit;
+		for (xit = xs.begin(), yit = ys.begin(); xit != xs.end(); ++xit, ++yit) {
+			(*yit) -= (*xit);
 		}
 	}
 
 	/**
-	 * Add vector ys to vector xs.
+	 * Add vector xs to vector ys.
 	 *
 	 * Vectors must have the same size.
 	 */
 	template <typename T>
-	void add(vector<T>& xs, const vector<T>& ys) {
-		typename vector<T>::iterator xit;
-		typename vector<T>::const_iterator yit, xend = xs.end();
-		for (xit = xs.begin(), yit = ys.begin(); xit != xend; ++xit, ++yit) {
-			(*xit) += (*yit);
+	void add_to(const vector<T>& xs, vector<T>& ys) {
+		typename vector<T>::const_iterator xit;
+		typename vector<T>::iterator yit;
+		for (xit = xs.begin(), yit = ys.begin(); xit != xs.end(); ++xit, ++yit) {
+			(*yit) += (*xit);
 		}
+	}
+
+	/**
+	 * Dot product of xs and ys.
+	 *
+	 * Vectors must have the same size.
+	 */
+	template <typename T>
+	T dot_product(const vector<T>& xs, const vector<T>& ys) {
+		typename vector<T>::const_iterator xit, yit;
+		T p = 0;
+		for (xit = xs.begin(), yit = ys.begin(); xit != xs.end(); ++xit, ++yit) {
+			p += (*xit) * (*yit);
+		}
+		return p;
 	}
 
 	/**
 	 * Root of sum of squares.
 	 */
 	template <typename T>
-	double rss(vector<T>& xs) {
-		typename vector<T>::iterator xit;
-		typename vector<T>::const_iterator xend = xs.end();
+	double rss(const vector<T>& xs) {
+		typename vector<T>::const_iterator xit;
 		double r = 0.0;
-		for (xit = xs.begin(); xit != xend; ++xit) {
+		for (xit = xs.begin(); xit != xs.end(); ++xit) {
 			double x = *xit;
 			r += x*x;
 		}
@@ -109,7 +123,7 @@ namespace stograd {
 	 *          negated if gradient did not converge to zero early
 	 */
 	template <typename Optimizable, typename Real>
-	double optimize(Optimizable& op, size_t bsize, size_t nepochs, Real rate=1e-2, Real eps=1.0e-4) {
+	double optimize(Optimizable& op, size_t bsize, size_t nepochs, Real rate=1e-2, Real eps=1e-4) {
 		size_t nobs = op.nobs();
 		size_t nparams = op.nparams();
 
@@ -164,7 +178,7 @@ namespace stograd {
 				op.update(grad);
 
 				// accumulate the overall gradient
-				add(ograd, grad);
+				add_to(grad, ograd);
 
 			} // nbatches
 			
