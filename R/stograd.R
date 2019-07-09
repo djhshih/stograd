@@ -41,7 +41,7 @@ stograd <- function(param, data, fn, gr=NULL, control = list()) {
 	}
 
 	if (is.null(control$eps)) {
-		eps <- 1e-6;
+		eps <- 1e-4;
 	}
 
 	if (is.null(gr)) {
@@ -49,7 +49,7 @@ stograd <- function(param, data, fn, gr=NULL, control = list()) {
 	}
 
 	for (i in 1:nepochs) {
-		mdelta <- rep(0, d);
+		odelta <- rep(0, d);
 		for (b in 1:nbatches) {
 			# extract batch
 			blim <- batch_limits(b, bsize, nbatches);
@@ -61,14 +61,11 @@ stograd <- function(param, data, fn, gr=NULL, control = list()) {
 			delta <- rate / B * gr(param, batch);
 			param <- param - delta;
 
-			mdelta <- mdelta + delta;
+			odelta <- odelta + delta;
 		}
 
-		# calculate mean delta
-		mdelta <- mdelta / nbatches;
-
 		# check for early convergence
-		if (sqrt(sum(mdelta*mdelta)) < eps) {
+		if (sqrt(sum(odelta*odelta)) < eps) {
 			message("INFO: Early convergence at epoch ", i)
 			break;
 		}
