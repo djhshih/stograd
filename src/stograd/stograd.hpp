@@ -4,6 +4,8 @@
 #include <vector>
 #include <cmath>
 
+#include <iostream>
+
 namespace stograd {
 
 	using namespace std;
@@ -101,8 +103,161 @@ namespace stograd {
 		}
 		return sqrt(r);
 	}
-	
 
+	/**
+	 * Sign of nuemric value.
+	 */
+	template <typename T> int sign(T t) {
+		return (T(0) < t) - (t < T(0));
+	}
+
+	namespace stepper {
+
+		/// Non-adaptive
+		template <typename Real>
+		struct constant {
+			// learning rate
+			Real r;
+
+			constant(Real rate=0.01)
+				: r(rate) {}
+
+			Real operator()(Real g) {
+				return r * g;
+			}
+		};
+
+		/// Momemtum
+		template <typename Real>
+		struct momentum {
+			// base learning rate
+			Real r;
+
+			// hyperparameter
+			Real b;
+
+			// first moment
+			Real v;
+
+			momentum(Real rate=0.001, Real beta=0.9)
+				: r(rate), b(beta), v(0.0) {}
+
+			Real operator()(Real g) {
+				// update moment
+				v = b * v + g;
+
+				return r * v;
+			}
+		};
+
+		/// RMSprop
+		/// equivalent to ADAM with beta2=0 and no bias correction
+		template <typename Real>
+		struct rmsprop {
+			// base learning rate
+			Real r;
+
+			// hyperparameters
+			Real b, e;
+
+			// second moment
+			Real v;
+
+			rmsprop(Real rate=0.001, Real beta=0.9, Real epsilon=1e-6)
+				: r(rate), b(beta), e(epsilon), v(0.0) {}
+
+			Real operator()(Real g) {
+				// update moment
+				v = b*v + (1 - b)*g*g;
+				
+				// NB epsilon is intentionally placed outside sqrt
+				return r * g / (sqrt(v) + e);
+			}
+		};
+
+		/// ADAM
+		template <typename Real>
+		struct adam {
+			// base learning rate
+			Real r;
+
+			// hyperparameters
+			Real b1, b2, e;
+
+			// bias correct the moments
+			// (this can cause v to blow up too quick, causing premature stopping)
+			bool debias;
+
+			// first and second moments
+			Real m, v;
+
+			// timestep
+			unsigned long int t;
+
+			adam(Real rate=0.001, Real beta1=0.9, Real beta2=0.999, Real epsilon=1e-3)
+				: r(rate), b1(beta1), b2(beta2), e(epsilon), debias(false), m(0.0), v(0.0), t(0) {}
+			
+			Real operator()(Real g) {
+				++t;
+
+				// update moments
+				m -= (1 - b1) * (m - g);
+				v -= (1 - b2) * (v - g*g);
+				// equivalently,
+				// m = b1*m + (1 - b1)*g;
+				// v = b2*v + (1 - b2)*g*g;
+
+				if (debias) {
+					// correct for bias in moments
+					m = m / (1 - pow(b1, t));
+					v = v / (1 - pow(b2, t));
+				}
+
+				return r * m / (sqrt(v) + e);
+			}
+		};
+
+		/// YOGI
+		template <typename Real>
+		struct yogi {
+			// base learning rate
+			Real r;
+
+			// hyperparameters
+			Real b1, b2, e;
+
+			// bias correct the moments
+			// (this can cause v to blow up too quick, causing premature stopping)
+			bool debias;
+
+			// first and second moments
+			Real m, v;
+
+			// timestep
+			unsigned long int t;
+
+			yogi(Real rate=0.01, Real beta1=0.9, Real beta2=0.999, Real epsilon=1e-3)
+				: r(rate), b1(beta1), b2(beta2), e(epsilon), debias(false), m(0.0), v(0.0), t(0) {}
+			
+			Real operator()(Real g) {
+				++t;
+
+				// update moments
+				m -= (1 - b1) * (m - g);
+				v -= (1 - b2) * sign(v - g*g) * g*g;
+
+				if (debias) {
+					// correct for bias in moments
+					m = m / (1 - pow(b1, t));
+					v = v / (1 - pow(b2, t));
+				}
+
+				return r * m / (sqrt(v) + e);
+			}
+		};
+
+	}  // namespace stepper
+	
 	/**
 	 * Optimize an objective function.
 	 *
@@ -115,15 +270,16 @@ namespace stograd {
 	 * 
 	 * @param op      an object of a class that implements the implicit 
 	 *                Optimizable interface
+	 * @param stepf   functor object for adapting the gradient into a step
+	 *                (e.g. stepper::constant, stepper::adam)
 	 * @param bsize   batch size
 	 * @param nepochs number of passes through the data
-	 * @param rate    base learning rate
 	 * @param eps     threshold on gradient norm for early convergence
 	 * @return  number of passes through the data (including fractions),
 	 *          negated if gradient did not converge to zero early
 	 */
-	template <typename Optimizable, typename Real>
-	double optimize(Optimizable& op, size_t bsize, size_t nepochs, Real rate=1e-2, Real eps=1e-4) {
+	template <typename Optimizable, typename F, typename Real>
+	double optimize(Optimizable& op, F& stepf, size_t bsize, size_t nepochs, Real eps=1e-4) {
 		size_t nobs = op.nobs();
 		size_t nparams = op.nparams();
 
@@ -134,13 +290,16 @@ namespace stograd {
 		size_t nremnant = nobs - (nbatches * bsize);
 
 		// TODO adapt the learning rate
-		Real _rate = rate;
+		//Real _rate = rate;
 
 		// number of data points processed in the current epoch
 		size_t nprocessed;
 
 		// early convergence of gradient to zero
 		bool converged = false;
+
+		// initialize a stepper for each parameter
+		vector<F> stepfs(nparams, stepf);
 
 		size_t a;
 		for (a = 0; a < nepochs; ++a) {
@@ -167,18 +326,23 @@ namespace stograd {
 					++nprocessed;
 				}
 
-				// compute the delta vector, re-using grad
+				// call the steppers with the normalized gradient to compute the steps
+				// reusing grad vector for storing the delta values
 				typename vector<Real>::iterator it;
 				typename vector<Real>::const_iterator end = grad.end();
-				for (it = grad.begin(); it != end; ++it) {
-					(*it) *= _rate / _bsize;
+				typename vector<F>::iterator sit;
+				for (it = grad.begin(), sit = stepfs.begin(); it != end; ++it, ++sit) {
+					// normalize the gradient by the batch size
+					double g = (*it) / _bsize;
+					(*it) = (*sit)(g);
 				}
+				vector<Real>& delta = grad;
 
 				// update the parameter vector
-				op.update(grad);
+				op.update(delta);
 
-				// accumulate the overall gradient
-				add_to(grad, odelta);
+				// accumulate the overall delta vector
+				add_to(delta, odelta);
 
 			} // nbatches
 			
