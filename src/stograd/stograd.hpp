@@ -315,6 +315,31 @@ namespace stograd {
 			}
 		};
 
+		/// AMSGrad
+		template <typename Real>
+		struct amsgrad {
+			// base learning rate
+			Real r;
+
+			// hyperparameters
+			Real b1, b2, e;
+
+			// first and second moments
+			Real m, v;
+
+			amsgrad(Real rate=0.001, Real beta1=0.9, Real beta2=0.999, Real epsilon=1e-3)
+				: r(rate), b1(beta1), b2(beta2), e(epsilon), m(0.0), v(0.0) {}
+			
+			Real operator()(Real g) {
+				// update first moment
+				m = b1*m + (1 - b1)*g;
+				// only update second moment if it becomes larger
+				v = max(v, b2*v + (1 - b2)*g*g);
+
+				return r * m / (sqrt(v) + e);
+			}
+		};
+
 		/// YOGI
 		template <typename Real>
 		struct yogi {
