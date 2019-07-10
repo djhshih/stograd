@@ -275,11 +275,11 @@ namespace stograd {
 	 * @param bsize   batch size
 	 * @param nepochs number of passes through the data
 	 * @param eps     threshold on gradient norm for early convergence
-	 * @return  number of passes through the data (including fractions),
+	 * @return  number of passes through the data,
 	 *          negated if gradient did not converge to zero early
 	 */
 	template <typename Optimizable, typename F, typename Real>
-	double optimize(Optimizable& op, F& stepf, size_t bsize, size_t nepochs, Real eps=1e-4) {
+	int optimize(Optimizable& op, F& stepf, size_t bsize, size_t nepochs, Real eps=1e-4) {
 		size_t nobs = op.nobs();
 		size_t nparams = op.nparams();
 
@@ -292,9 +292,6 @@ namespace stograd {
 		// TODO adapt the learning rate
 		//Real _rate = rate;
 
-		// number of data points processed in the current epoch
-		size_t nprocessed;
-
 		// early convergence of gradient to zero
 		bool converged = false;
 
@@ -303,7 +300,6 @@ namespace stograd {
 
 		size_t a;
 		for (a = 0; a < nepochs; ++a) {
-			nprocessed = 0;
 
 			// overall gradient across all batches
 			vector<Real> odelta(nparams, 0.0);
@@ -323,7 +319,6 @@ namespace stograd {
 				// iterate through data points in a batch to accumulate the gradient
 				for (size_t i = 0; i < _bsize; ++i) {
 					op.accumulate(grad);
-					++nprocessed;
 				}
 
 				// call the steppers with the normalized gradient to compute the steps
@@ -353,8 +348,7 @@ namespace stograd {
 
 		} // nepochs
 
-		double epochs = a + ((double)nprocessed / nobs);
-		return converged ? epochs : -epochs;
+		return converged ? a : -a;
 	}
 
 	/**

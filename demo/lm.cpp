@@ -162,7 +162,7 @@ int main(int argc, char* argv[]) {
 		lm::model m(X, y);
 		lm::optimizable opt(N, D, m);
 		stograd::stepper::constant<double> st(0.01);
-		double epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
+		int epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
 
 		cout << "elasped epochs: " << epochs << endl;
 		cout << "beta_hat: [" << opt.beta[0] << ", " << opt.beta[1] << "]" << endl << endl;
@@ -174,7 +174,7 @@ int main(int argc, char* argv[]) {
 		lm::finite_difference::model m(X, y);
 		lm::optimizable opt(N, D, m);
 		stograd::stepper::constant<double> st(0.01);
-		double epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
+		int epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
 
 		cout << "elasped epochs: " << epochs << endl;
 		cout << "beta_hat: [" << opt.beta[0] << ", " << opt.beta[1] << "]" << endl << endl;
@@ -186,7 +186,7 @@ int main(int argc, char* argv[]) {
 		lm::model m(X, y);
 		lm::optimizable opt(N, D, m);
 		stograd::stepper::momentum<double> st(0.01);
-		double epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
+		int epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
 
 		cout << "elasped epochs: " << epochs << endl;
 		cout << "beta_hat: [" << opt.beta[0] << ", " << opt.beta[1] << "]" << endl << endl;
@@ -198,7 +198,7 @@ int main(int argc, char* argv[]) {
 		lm::model m(X, y);
 		lm::optimizable opt(N, D, m);
 		stograd::stepper::rmsprop<double> st(0.01);
-		double epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
+		int epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
 
 		cout << "elasped epochs: " << epochs << endl;
 		cout << "beta_hat: [" << opt.beta[0] << ", " << opt.beta[1] << "]" << endl << endl;
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
 		lm::model m(X, y);
 		lm::optimizable opt(N, D, m);
 		stograd::stepper::adam<double> st(0.01);
-		double epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
+		int epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
 
 		cout << "elasped epochs: " << epochs << endl;
 		cout << "beta_hat: [" << opt.beta[0] << ", " << opt.beta[1] << "]" << endl << endl;
@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
 		lm::model m(X, y);
 		lm::optimizable opt(N, D, m);
 		stograd::stepper::yogi<double> st(0.01);
-		double epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
+		int epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
 
 		cout << "elasped epochs: " << epochs << endl;
 		cout << "beta_hat: [" << opt.beta[0] << ", " << opt.beta[1] << "]" << endl << endl;
