@@ -289,9 +289,6 @@ namespace stograd {
 		// number of leftover data points
 		size_t nremnant = nobs - (nbatches * bsize);
 
-		// TODO adapt the learning rate
-		//Real _rate = rate;
-
 		// early convergence of gradient to zero
 		bool converged = false;
 
