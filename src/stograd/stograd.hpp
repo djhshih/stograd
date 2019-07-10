@@ -217,6 +217,30 @@ namespace stograd {
 			}
 		};
 
+		/// AdaMax
+		template <typename Real>
+		struct adamax {
+			// base learning rate
+			Real r;
+
+			// hyperparameters
+			Real b1, b2;
+
+			// first and second moments
+			Real m, v;
+
+			adamax(Real rate=0.001, Real beta1=0.9, Real beta2=0.999)
+				: r(rate), b1(beta1), b2(beta2), m(0.0), v(0.0) {}
+			
+			Real operator()(Real g) {
+				// update moments
+				m -= (1 - b1) * (m - g);
+				v = max(b2*v, abs(g));
+
+				return r * m / v;
+			}
+		};
+
 		/// YOGI
 		template <typename Real>
 		struct yogi {
