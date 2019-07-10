@@ -52,9 +52,9 @@ namespace stograd {
 	 */
 	template <typename T>
 	void subtract_from(const vector<T>& xs, vector<T>& ys) {
-		typename vector<T>::const_iterator xit;
+		typename vector<T>::const_iterator xit, xend = xs.end();
 		typename vector<T>::iterator yit;
-		for (xit = xs.begin(), yit = ys.begin(); xit != xs.end(); ++xit, ++yit) {
+		for (xit = xs.begin(), yit = ys.begin(); xit != xend; ++xit, ++yit) {
 			(*yit) -= (*xit);
 		}
 	}
@@ -66,9 +66,9 @@ namespace stograd {
 	 */
 	template <typename T>
 	void add_to(const vector<T>& xs, vector<T>& ys) {
-		typename vector<T>::const_iterator xit;
+		typename vector<T>::const_iterator xit, xend = xs.end();
 		typename vector<T>::iterator yit;
-		for (xit = xs.begin(), yit = ys.begin(); xit != xs.end(); ++xit, ++yit) {
+		for (xit = xs.begin(), yit = ys.begin(); xit != xend; ++xit, ++yit) {
 			(*yit) += (*xit);
 		}
 	}
@@ -80,9 +80,9 @@ namespace stograd {
 	 */
 	template <typename T>
 	T dot_product(const vector<T>& xs, const vector<T>& ys) {
-		typename vector<T>::const_iterator xit, yit;
+		typename vector<T>::const_iterator xit, yit, xend = xs.end();
 		T p = 0;
-		for (xit = xs.begin(), yit = ys.begin(); xit != xs.end(); ++xit, ++yit) {
+		for (xit = xs.begin(), yit = ys.begin(); xit != xend; ++xit, ++yit) {
 			p += (*xit) * (*yit);
 		}
 		return p;
@@ -93,9 +93,9 @@ namespace stograd {
 	 */
 	template <typename T>
 	double rss(const vector<T>& xs) {
-		typename vector<T>::const_iterator xit;
+		typename vector<T>::const_iterator xit, xend = xs.end();
 		double r = 0.0;
-		for (xit = xs.begin(); xit != xs.end(); ++xit) {
+		for (xit = xs.begin(); xit != xend; ++xit) {
 			double x = *xit;
 			r += x*x;
 		}
