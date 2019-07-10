@@ -309,6 +309,10 @@ namespace stograd {
 				d = sqrt(s + e) / sqrt(v + e) * m;
 
 				// update coefficient
+				// NB difference from Kazunori Yamada's reference implementation:
+				//    the coefficient upate uses the L1 norm of vector d,
+				//    and there is only one coefficient shared across parameter
+				//    dimensions
 				b = logistic( (abs(d) + e) / (abs(dp) + e) ) - e;
 
 				return d;
