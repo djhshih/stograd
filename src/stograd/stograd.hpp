@@ -111,6 +111,13 @@ namespace stograd {
 		return (T(0) < t) - (t < T(0));
 	}
 
+	/**
+	 * Sigmoid function.
+	 */
+	template <typename T> T logistic(T t) {
+		return 1 / (1 + exp(-t));
+	}
+
 	namespace stepper {
 
 		/// Non-adaptive
@@ -172,6 +179,32 @@ namespace stograd {
 				
 				// NB epsilon is intentionally placed outside sqrt
 				return r * g / (sqrt(v) + e);
+			}
+		};
+
+		/// AdaDelta
+		template <typename Real>
+		struct adadelta {
+			// hyperparameters
+			Real b, e;
+
+			// second moments of gradient and delta
+			Real v, s;
+
+			// previous delta
+			Real d;
+
+			adadelta(Real beta=0.95, Real epsilon=1e-6)
+				: b(beta), e(epsilon), v(0.0), s(0.0), d(0.0) {}
+
+			Real operator()(Real g) {
+				// update moments
+				v = b*v + (1 - b)*g*g;
+				s = b*s + (1 - b)*d*d;
+
+				d = sqrt(s + e) / sqrt(v + e) * g;
+
+				return d;
 			}
 		};
 
@@ -238,6 +271,47 @@ namespace stograd {
 				v = max(b2*v, abs(g));
 
 				return r * m / v;
+			}
+		};
+
+		/// YamAdam
+		template <typename Real>
+		struct yamadam {
+			// hyperparameter
+			Real e;
+
+			// first moment of gradient
+			Real m;
+
+			// second centered moment of gradient
+			Real v;
+
+			// second moment of delta
+			Real s;
+
+			// previous and current delta
+			Real dp, d;
+
+			// exponential moving average coefficient
+			Real b;
+
+			yamadam(Real epsilon=1e-6)
+				: e(epsilon), m(0.0), v(0.0), s(0.0), d(0.0), b(0.0) {}
+
+			Real operator()(Real g) {
+				dp = d;
+
+				// update moments
+				m = b*m + (1 - b)*g;
+				v = b*v + (1 - b)*(g - m)*(g - m);
+				s = b*s + (1 - b)*d*d;
+
+				d = sqrt(s + e) / sqrt(v + e) * m;
+
+				// update coefficient
+				b = logistic( (abs(d) + e) / (abs(dp) + e) ) - e;
+
+				return d;
 			}
 		};
 

@@ -205,6 +205,18 @@ int main(int argc, char* argv[]) {
 	}
 
 	{
+		cout << "AdaDelta ..." << endl;
+
+		lm::model m(X, y);
+		lm::optimizable opt(N, D, m);
+		stograd::stepper::adadelta<double> st;  // AdaDelta has no learning rate parameter
+		int epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
+
+		cout << "elasped epochs: " << epochs << endl;
+		cout << "beta_hat: [" << opt.beta[0] << ", " << opt.beta[1] << "]" << endl << endl;
+	}
+
+	{
 		cout << "ADAM ..." << endl;
 
 		lm::model m(X, y);
@@ -222,6 +234,18 @@ int main(int argc, char* argv[]) {
 		lm::model m(X, y);
 		lm::optimizable opt(N, D, m);
 		stograd::stepper::adamax<double> st(0.01);
+		int epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
+
+		cout << "elasped epochs: " << epochs << endl;
+		cout << "beta_hat: [" << opt.beta[0] << ", " << opt.beta[1] << "]" << endl << endl;
+	}
+
+	{
+		cout << "YamAdam  ..." << endl;
+
+		lm::model m(X, y);
+		lm::optimizable opt(N, D, m);
+		stograd::stepper::yamadam<double> st;  // YamAdam only has epsilon hyperparameter
 		int epochs = stograd::optimize(opt, st, 2, 1000, 1e-3);
 
 		cout << "elasped epochs: " << epochs << endl;
