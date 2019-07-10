@@ -147,7 +147,7 @@ namespace stograd {
 			nprocessed = 0;
 
 			// overall gradient across all batches
-			vector<Real> ograd(nparams, 0.0);
+			vector<Real> odelta(nparams, 0.0);
 
 			for (size_t b = 0; b < nbatches; ++b) {
 
@@ -178,11 +178,11 @@ namespace stograd {
 				op.update(grad);
 
 				// accumulate the overall gradient
-				add_to(grad, ograd);
+				add_to(grad, odelta);
 
 			} // nbatches
 			
-			if (rss(ograd) < eps) {
+			if (rss(odelta) < eps) {
 				converged = true;
 				break;
 			}
