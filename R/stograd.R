@@ -12,7 +12,7 @@
 #'                 \itemize{
 #'                   \item \code{nbatches}, number of batches [10];
 #'                   \item \code{bsize}, batch size;
-#'								   \item \code{nepochs}, number of passes through the data;
+#'                   \item \code{nepochs}, number of passes through the data;
 #'                   \item \code{rate}, learning rate [0.01];
 #'                   \item \code{eps}, threshold for gradient norm for early exit
 #'                 }
